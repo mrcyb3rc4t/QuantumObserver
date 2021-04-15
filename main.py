@@ -42,6 +42,7 @@ print(y_train[0])
 
 plt.imshow(x_train[0, :, :, 0])
 plt.colorbar()
+plt.show(block=True)
 
 # Размер изображения 28x28 слишком велик для современных квантовых компьютеров. Измените размер изображения до 4x4:
 
@@ -52,6 +53,7 @@ print(y_train[0])
 
 plt.imshow(x_train_small[0, :, :, 0], vmin=0, vmax=1)
 plt.colorbar()
+plt.show()
 
 # удаление противоречивых примеров согласно какой-то теории
 
