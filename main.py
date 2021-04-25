@@ -78,8 +78,10 @@ def remove_contradicting(xs, ys):
             # Throw out images that match more than one label.
             pass
 
-    num_uniq_3 = sum(1 for value in mapping.values() if len(value) == 1 and True in value)
-    num_uniq_6 = sum(1 for value in mapping.values() if len(value) == 1 and False in value)
+    num_uniq_3 = sum(1 for value in mapping.values()
+                     if len(value) == 1 and True in value)
+    num_uniq_6 = sum(1 for value in mapping.values()
+                     if len(value) == 1 and False in value)
     num_uniq_both = sum(1 for value in mapping.values() if len(value) == 2)
 
     print("Number of unique images:", len(mapping.values()))
@@ -221,10 +223,10 @@ x_train_tfcirc_sub = x_train_tfcirc[:NUM_EXAMPLES]
 y_train_hinge_sub = y_train_hinge[:NUM_EXAMPLES]
 
 qnn_history = model.fit(
-      x_train_tfcirc_sub, y_train_hinge_sub,
-      batch_size=32,
-      epochs=EPOCHS,
-      verbose=1,
-      validation_data=(x_test_tfcirc, y_test_hinge))
+    x_train_tfcirc_sub, y_train_hinge_sub,
+    batch_size=32,
+    epochs=EPOCHS,
+    verbose=1,
+    validation_data=(x_test_tfcirc, y_test_hinge))
 
 qnn_results = model.evaluate(x_test_tfcirc, y_test)
