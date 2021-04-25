@@ -1,7 +1,12 @@
-def load_own_data(file_name):
+def load_own_data(file_name, vulnerability):
     with open(file_name, "r") as f:
-        x = f.readlines()
-        x = [xi.split(',') for xi in x]
+        temp = f.readlines()
+        x = []
+        for xi in temp:
+            if (xi.split(',')[-1] == 'normal.\n' or xi.split(',')[-1] == (vulnerability + '.\n')):
+                x.append(xi.split(','))
+        temp = 0
+        # x = [if () xi.split(',') for xi in x]
 
         x_train = x[:int((len(x) / 2))]
         x_test = x[int((len(x) / 2)):]
@@ -36,5 +41,5 @@ def load_own_data(file_name):
 
 
 (x_train, y_train), (x_test, y_test) = load_own_data(
-    "kddcup.data_10_percent_corrected")
+    "kddcup.data_10_percent_corrected", "neptune")
 print(x_train[0], y_train[0], x_test[0], y_test[0])
