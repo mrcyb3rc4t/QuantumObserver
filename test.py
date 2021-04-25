@@ -17,7 +17,11 @@ def load_own_data(file_name, vulnerability):
             for i in range(len(line)):
                 if i == 1 or i == 2 or i == 3 or i == 41:
                     if i == 41:
-                        y_train.append(line[i][:-2])
+                        if (line[i][:-2] == "normal"):
+                            y_train.append(True)
+                        else:
+                            y_train.append(False)
+                        # y_train.append(line[i][:-2])
                 elif i == 24 or i == 25 or i == 26 or i == 27 or i == 28 or i == 29 or i == 30 or i == 33 or i == 34 or i == 35 or i == 36 or i == 37 or i == 38 or i == 39 or i == 40:
                     line[i] = float(line[i])
                 else:
@@ -29,7 +33,11 @@ def load_own_data(file_name, vulnerability):
             for i in range(len(line)):
                 if i == 1 or i == 2 or i == 3 or i == 41:
                     if i == 41:
-                        y_test.append(line[i][:-2])
+                        if (line[i][:-2] == "normal"):
+                            y_test.append(True)
+                        else:
+                            y_test.append(False)
+                        # y_test.append(line[i][:-2])
                 elif i == 24 or i == 25 or i == 26 or i == 27 or i == 28 or i == 29 or i == 30 or i == 33 or i == 34 or i == 35 or i == 36 or i == 37 or i == 38 or i == 39 or i == 40:
                     line[i] = float(line[i])
                 else:
