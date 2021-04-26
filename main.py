@@ -6,18 +6,70 @@ import sympy
 import numpy as np
 import seaborn as sns
 import collections
+import bitstring
 
 # visualization tools
 # %matplotlib inline
 import matplotlib.pyplot as plt
 from cirq.contrib.svg import SVGCircuit
 
+
+def load_own_data(file_name, vulnerability):
+    with open(file_name, "r") as f:
+        temp = f.readlines()
+        x = []
+        for xi in temp:
+            if xi.split(',')[-1] == 'normal.\n' or xi.split(',')[-1] == (vulnerability + '.\n'):
+                x.append(xi.split(','))
+        temp = 0
+        # x = [if () xi.split(',') for xi in x]
+
+        x_train = x[:int((len(x) / 2))]
+        x_test = x[int((len(x) / 2)):]
+        y_train = []
+        y_test = []
+
+        for line in x_train:
+            for i in range(len(line)):
+                if i == 1 or i == 2 or i == 3 or i == 41:
+                    if i == 41:
+                        if line[i][:-2] == "normal":
+                            y_train.append(True)
+                        else:
+                            y_train.append(False)
+                        # y_train.append(line[i][:-2])
+                elif i == 24 or i == 25 or i == 26 or i == 27 or i == 28 or i == 29 or i == 30 or i == 33 or i == 34 or i == 35 or i == 36 or i == 37 or i == 38 or i == 39 or i == 40:
+                    line[i] = float(line[i])
+                else:
+                    line[i] = int(line[i])
+            # удаляем последний элемент (метку)
+            line.pop()
+
+        for line in x_test:
+            for i in range(len(line)):
+                if i == 1 or i == 2 or i == 3 or i == 41:
+                    if i == 41:
+                        if line[i][:-2] == "normal":
+                            y_test.append(True)
+                        else:
+                            y_test.append(False)
+                        # y_test.append(line[i][:-2])
+                elif i == 24 or i == 25 or i == 26 or i == 27 or i == 28 or i == 29 or i == 30 or i == 33 or i == 34 or i == 35 or i == 36 or i == 37 or i == 38 or i == 39 or i == 40:
+                    line[i] = float(line[i])
+                else:
+                    line[i] = int(line[i])
+            # удаляем последний элемент (метку)
+            line.pop()
+
+    return (x_train, y_train), (x_test, y_test)
+
+
 # загружаем датасеты MNIST
 
-(x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+(x_train, y_train), (x_test, y_test) = load_own_data("kddcup.data_10_percent_corrected", "neptun")
 
 # Rescale the images from [0,255] to the [0.0,1.0] range.
-x_train, x_test = x_train[..., np.newaxis]/255.0, x_test[..., np.newaxis]/255.0
+# x_train, x_test = x_train[..., np.newaxis]/255.0, x_test[..., np.newaxis]/255.0
 
 print("Number of original training examples:", len(x_train))
 print("Number of original test examples:", len(x_test))
@@ -25,84 +77,114 @@ print("Number of original test examples:", len(x_test))
 # оставим только 3 и 6
 
 
-def filter_36(x, y):
-    keep = (y == 3) | (y == 6)
-    x, y = x[keep], y[keep]
-    y = y == 3
-    return x, y
+# def filter_36(x, y):
+#     keep = (y == 3) | (y == 6)
+#     x, y = x[keep], y[keep]
+#     y = y == 3
+#     return x, y
+#
+#
+# x_train, y_train = filter_36(x_train, y_train)
+# x_test, y_test = filter_36(x_test, y_test)
+#
+# print("Number of filtered training examples:", len(x_train))
+# print("Number of filtered test examples:", len(x_test))
 
+# print(y_train[0])
 
-x_train, y_train = filter_36(x_train, y_train)
-x_test, y_test = filter_36(x_test, y_test)
-
-print("Number of filtered training examples:", len(x_train))
-print("Number of filtered test examples:", len(x_test))
-
-print(y_train[0])
-
-plt.imshow(x_train[0, :, :, 0])
-plt.colorbar()
-plt.show(block=True)
+# plt.imshow(x_train[0, :, :, 0])
+# plt.colorbar()
+# plt.show(block=True)
 
 # Размер изображения 28x28 слишком велик для современных квантовых компьютеров. Измените размер изображения до 4x4:
 
-x_train_small = tf.image.resize(x_train, (4, 4)).numpy()
-x_test_small = tf.image.resize(x_test, (4, 4)).numpy()
+# x_train_small = tf.image.resize(x_train, (4, 4)).numpy()
+# x_test_small = tf.image.resize(x_test, (4, 4)).numpy()
 
-print(y_train[0])
-
-plt.imshow(x_train_small[0, :, :, 0], vmin=0, vmax=1)
-plt.colorbar()
-plt.show()
+# print(y_train[0])
+#
+# plt.imshow(x_train_small[0, :, :, 0], vmin=0, vmax=1)
+# plt.colorbar()
+# plt.show()
 
 # удаление противоречивых примеров согласно какой-то теории
 
 
-def remove_contradicting(xs, ys):
-    mapping = collections.defaultdict(set)
-    orig_x = {}
-    # Determine the set of labels for each unique image:
-    for x, y in zip(xs, ys):
-        orig_x[tuple(x.flatten())] = x
-        mapping[tuple(x.flatten())].add(y)
+# def remove_contradicting(xs, ys):
+#     mapping = collections.defaultdict(set)
+#     orig_x = {}
+#     # Determine the set of labels for each unique image:
+#     for x, y in zip(xs, ys):
+#         orig_x[tuple(x.flatten())] = x
+#         mapping[tuple(x.flatten())].add(y)
+#
+#     new_x = []
+#     new_y = []
+#     for flatten_x in mapping:
+#         x = orig_x[flatten_x]
+#         labels = mapping[flatten_x]
+#         if len(labels) == 1:
+#             new_x.append(x)
+#             new_y.append(next(iter(labels)))
+#         else:
+#             # Throw out images that match more than one label.
+#             pass
+#
+#     num_uniq_3 = sum(1 for value in mapping.values()
+#                      if len(value) == 1 and True in value)
+#     num_uniq_6 = sum(1 for value in mapping.values()
+#                      if len(value) == 1 and False in value)
+#     num_uniq_both = sum(1 for value in mapping.values() if len(value) == 2)
+#
+#     print("Number of unique images:", len(mapping.values()))
+#     print("Number of unique 3s: ", num_uniq_3)
+#     print("Number of unique 6s: ", num_uniq_6)
+#     print("Number of unique contradicting labels (both 3 and 6): ", num_uniq_both)
+#     print()
+#     print("Initial number of images: ", len(xs))
+#     print("Remaining non-contradicting unique images: ", len(new_x))
+#
+#     return np.array(new_x), np.array(new_y)
 
-    new_x = []
-    new_y = []
-    for flatten_x in mapping:
-        x = orig_x[flatten_x]
-        labels = mapping[flatten_x]
-        if len(labels) == 1:
-            new_x.append(x)
-            new_y.append(next(iter(labels)))
-        else:
-            # Throw out images that match more than one label.
-            pass
 
-    num_uniq_3 = sum(1 for value in mapping.values()
-                     if len(value) == 1 and True in value)
-    num_uniq_6 = sum(1 for value in mapping.values()
-                     if len(value) == 1 and False in value)
-    num_uniq_both = sum(1 for value in mapping.values() if len(value) == 2)
-
-    print("Number of unique images:", len(mapping.values()))
-    print("Number of unique 3s: ", num_uniq_3)
-    print("Number of unique 6s: ", num_uniq_6)
-    print("Number of unique contradicting labels (both 3 and 6): ", num_uniq_both)
-    print()
-    print("Initial number of images: ", len(xs))
-    print("Remaining non-contradicting unique images: ", len(new_x))
-
-    return np.array(new_x), np.array(new_y)
+# x_train_nocon, y_train_nocon = remove_contradicting(x_train_small, y_train)
 
 
-x_train_nocon, y_train_nocon = remove_contradicting(x_train_small, y_train)
+def convert_data_to_binary(data):
+    result = []
+
+    for line in data:
+        for i in range(len(line)):
+            if i == 1 or i == 2 or i == 3:
+                a_byte_array = bytearray(line[i], "utf8")
+
+                byte_list = []
+
+                for byte in a_byte_array:
+                    binary_representation = bin(byte)
+                    byte_list.append(binary_representation)
+
+                for byte in byte_list:
+                    for bit in byte[2:]:
+                        result.append(int(bit))
+
+            elif i == 24 or i == 25 or i == 26 or i == 27 or i == 28 or i == 29 or i == 30 or i == 33 or i == 34 or i == 35 or i == 36 or i == 37 or i == 38 or i == 39 or i == 40:
+                bits = bitstring.BitArray(float=line[i], length=32)
+                for bit in bits.bin:
+                    result.append(int(bit))
+            else:
+                for bit in bin(line[i])[2:]:
+                    result.append(int(bit))
+
+    return result
+
 
 THRESHOLD = 0.5
 
-x_train_bin = np.array(x_train_nocon > THRESHOLD, dtype=np.float32)
-x_test_bin = np.array(x_test_small > THRESHOLD, dtype=np.float32)
+x_train_bin = convert_data_to_binary(x_train)
+x_test_bin = convert_data_to_binary(x_test)
 
-_ = remove_contradicting(x_train_bin, y_train_nocon)
+# _ = remove_contradicting(x_train_bin, y_train_nocon)
 
 # самый примитивный перевод в кубиты
 
