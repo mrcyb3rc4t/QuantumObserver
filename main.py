@@ -152,6 +152,7 @@ print("Number of original test examples:", len(x_test))
 
 def convert_data_to_binary(data):
     result = []
+    new_line = []
 
     for line in data:
         for i in range(len(line)):
@@ -166,15 +167,17 @@ def convert_data_to_binary(data):
 
                 for byte in byte_list:
                     for bit in byte[2:]:
-                        result.append(int(bit))
+                        new_line.append(int(bit))
 
             elif i == 24 or i == 25 or i == 26 or i == 27 or i == 28 or i == 29 or i == 30 or i == 33 or i == 34 or i == 35 or i == 36 or i == 37 or i == 38 or i == 39 or i == 40:
                 bits = bitstring.BitArray(float=line[i], length=32)
                 for bit in bits.bin:
-                    result.append(int(bit))
+                    new_line.append(int(bit))
             else:
                 for bit in bin(line[i])[2:]:
-                    result.append(int(bit))
+                    new_line.append(int(bit))
+
+        result.append(new_line)
 
     return result
 
@@ -189,13 +192,11 @@ x_test_bin = convert_data_to_binary(x_test)
 # самый примитивный перевод в кубиты
 
 
-def convert_to_circuit(image):
-    """Encode truncated classical image into quantum datapoint."""
-    values = np.ndarray.flatten(image)
-    qubits = cirq.GridQubit.rect(4, 4)
+def convert_to_circuit(data):
+    qubits = cirq.LineQubit.range(len(data))
     circuit_t = cirq.Circuit()
-    for i, value in enumerate(values):
-        if value:
+    for i, bit in data:
+        if bit:
             circuit_t.append(cirq.X(qubits[i]))
     return circuit_t
 
@@ -206,8 +207,8 @@ x_test_circ = [convert_to_circuit(x) for x in x_test_bin]
 
 SVGCircuit(x_train_circ[0])
 
-bin_img = x_train_bin[0, :, :, 0]
-indices = np.array(np.where(bin_img)).T
+# bin_img = x_train_bin[0, :, :, 0]
+# indices = np.array(np.where(bin_img)).T
 
 x_train_tfcirc = tfq.convert_to_tensor(x_train_circ)
 x_test_tfcirc = tfq.convert_to_tensor(x_test_circ)
@@ -229,7 +230,7 @@ class CircuitLayerBuilder:
             circuit_t.append(gate(qubit, self.readout) ** symbol)
 
 
-demo_builder = CircuitLayerBuilder(data_qubits=cirq.GridQubit.rect(4, 1),
+demo_builder = CircuitLayerBuilder(data_qubits=cirq.LineQubit.range(len(x_train[0])),
                                    readout=cirq.GridQubit(-1, -1))
 
 circuit = cirq.Circuit()
@@ -243,7 +244,7 @@ SVGCircuit(circuit)
 
 def create_quantum_model():
     """Create a QNN model circuit and readout operation to go along with it."""
-    data_qubits = cirq.GridQubit.rect(4, 4)  # a 4x4 grid.
+    data_qubits = cirq.LineQubit.range(len(x_train[0]))  # a 4x4 grid.
     readout = cirq.GridQubit(-1, -1)         # a single qubit at [-1,-1]
     circuit_t = cirq.Circuit()
 
