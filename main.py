@@ -66,12 +66,12 @@ def load_own_data(file_name, vulnerability):
 
 # загружаем датасеты MNIST
 
-(x_train, y_train), (x_test, y_test) = load_own_data("kddcup.data_10_percent_corrected", "neptun")
+(x_train, y_train), (x_test, y_test) = load_own_data("kddcup.data_10_percent_corrected", "neptune")
 
 # Rescale the images from [0,255] to the [0.0,1.0] range.
 # x_train, x_test = x_train[..., np.newaxis]/255.0, x_test[..., np.newaxis]/255.0
 
-DATA_SLICE = 10
+DATA_SLICE = 10000
 
 x_train = x_train[:DATA_SLICE]
 y_train = y_train[:DATA_SLICE]
@@ -81,6 +81,7 @@ y_test = y_test[:DATA_SLICE]
 
 print("Number of original training examples:", len(x_train))
 print("Number of original test examples:", len(x_test))
+
 
 # оставим только 3 и 6
 
@@ -202,15 +203,30 @@ x_test_bin = convert_data_to_binary(x_test)
 
 print("Convert to binary done")
 
+
+def pack_data(data):
+    result = []
+    for line in data:
+        new_line = []
+        for i in range(0, 160, 8):
+            new_line.append(line[i])
+        result.append(new_line)
+
+    return result
+
+
 # _ = remove_contradicting(x_train_bin, y_train_nocon)
+
+x_train_bin = pack_data(x_train_bin)
+x_test_bin = pack_data(x_test_bin)
 
 # самый примитивный перевод в кубиты
 
 
 def convert_to_circuit(data):
-    qubits = cirq.GridQubit.rect(1, len(data))
+    qubits = cirq.GridQubit.rect(1, 20)
     circuit_t = cirq.Circuit()
-    for i in range(len(data)):
+    for i in range(20):
         if data[i]:
             circuit_t.append(cirq.X(qubits[i]))
     return circuit_t
@@ -226,7 +242,6 @@ print("test_done")
 
 print("... convert to circuits done")
 
-
 SVGCircuit(x_train_circ[0])
 
 # bin_img = x_train_bin[0, :, :, 0]
@@ -234,6 +249,7 @@ SVGCircuit(x_train_circ[0])
 
 x_train_tfcirc = tfq.convert_to_tensor(x_train_circ)
 x_test_tfcirc = tfq.convert_to_tensor(x_test_circ)
+
 
 # построение модельной схемы
 # В следующем примере показан многоуровневый подход.
@@ -259,6 +275,7 @@ circuit = cirq.Circuit()
 demo_builder.add_layer(circuit, gate=cirq.XX, prefix='xx')
 SVGCircuit(circuit)
 
+
 # построение двухуровневой модели,
 # соответствующей размеру цепи данных,
 # и включение в нее операции подготовки и считывания.
@@ -266,8 +283,8 @@ SVGCircuit(circuit)
 
 def create_quantum_model():
     """Create a QNN model circuit and readout operation to go along with it."""
-    data_qubits = cirq.GridQubit.rect(1, 610)  # a 4x4 grid.
-    readout = cirq.GridQubit(-1, -1)         # a single qubit at [-1,-1]
+    data_qubits = cirq.GridQubit.rect(1, 20)  # a 4x4 grid.
+    readout = cirq.GridQubit(-1, -1)  # a single qubit at [-1,-1]
     circuit_t = cirq.Circuit()
 
     # Prepare the readout qubit.
@@ -298,9 +315,8 @@ model = tf.keras.Sequential([
     tfq.layers.PQC(model_circuit, model_readout),
 ])
 
-
-y_train_hinge = 2.0*np.array(y_train)-1.0
-y_test_hinge = 2.0*np.array(y_test)-1.0
+y_train_hinge = 2.0 * np.array(y_train) - 1.0
+y_test_hinge = 2.0 * np.array(y_test) - 1.0
 
 
 def hinge_accuracy(y_true, y_pred):
@@ -318,7 +334,6 @@ model.compile(
 
 print(model.summary())
 
-
 EPOCHS = 3
 BATCH_SIZE = 32
 
@@ -334,4 +349,4 @@ qnn_history = model.fit(
     verbose=1,
     validation_data=(x_test_tfcirc, y_test_hinge))
 
-qnn_results = model.evaluate(x_test_tfcirc, y_test)
+qnn_results = model.evaluate(x_test_tfcirc, np.array(y_test))
