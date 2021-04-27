@@ -77,7 +77,7 @@ x_train = x_train[:DATA_SLICE]
 y_train = y_train[:DATA_SLICE]
 
 x_test = x_test[:DATA_SLICE]
-# y_test = y_test[:DATA_SLICE]
+y_test = y_test[:DATA_SLICE]
 
 print("Number of original training examples:", len(x_train))
 print("Number of original test examples:", len(x_test))
