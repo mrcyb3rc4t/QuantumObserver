@@ -191,8 +191,6 @@ def convert_data_to_binary(data):
                     new_line.append(int(bit))
 
         result.append(new_line)
-        print(line_size)
-        line_size = 0
 
     return result
 
@@ -254,7 +252,7 @@ class CircuitLayerBuilder:
             circuit_t.append(gate(qubit, self.readout) ** symbol)
 
 
-demo_builder = CircuitLayerBuilder(data_qubits=cirq.LineQubit.range(len(x_train[0])),
+demo_builder = CircuitLayerBuilder(data_qubits=cirq.GridQubit.rect(1, len(x_train[0])),
                                    readout=cirq.GridQubit(-1, -1))
 
 circuit = cirq.Circuit()
@@ -268,7 +266,7 @@ SVGCircuit(circuit)
 
 def create_quantum_model():
     """Create a QNN model circuit and readout operation to go along with it."""
-    data_qubits = cirq.LineQubit.range(len(x_train[0]))  # a 4x4 grid.
+    data_qubits = cirq.GridQubit.rect(1, 610)  # a 4x4 grid.
     readout = cirq.GridQubit(-1, -1)         # a single qubit at [-1,-1]
     circuit_t = cirq.Circuit()
 
