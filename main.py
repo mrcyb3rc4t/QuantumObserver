@@ -71,7 +71,7 @@ def load_own_data(file_name, vulnerability):
 # Rescale the images from [0,255] to the [0.0,1.0] range.
 # x_train, x_test = x_train[..., np.newaxis]/255.0, x_test[..., np.newaxis]/255.0
 
-DATA_SLICE = 1000
+DATA_SLICE = 10
 
 x_train = x_train[:DATA_SLICE]
 y_train = y_train[:DATA_SLICE]
