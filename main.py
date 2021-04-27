@@ -71,6 +71,14 @@ def load_own_data(file_name, vulnerability):
 # Rescale the images from [0,255] to the [0.0,1.0] range.
 # x_train, x_test = x_train[..., np.newaxis]/255.0, x_test[..., np.newaxis]/255.0
 
+DATA_SLICE = 1000
+
+x_train = x_train[:DATA_SLICE]
+y_train = y_train[:DATA_SLICE]
+
+x_test = x_test[:DATA_SLICE]
+# y_test = y_test[:DATA_SLICE]
+
 print("Number of original training examples:", len(x_train))
 print("Number of original test examples:", len(x_test))
 
@@ -152,9 +160,11 @@ print("Number of original test examples:", len(x_test))
 
 def convert_data_to_binary(data):
     result = []
-    new_line = []
+
+    line_size = 0
 
     for line in data:
+        new_line = []
         for i in range(len(line)):
             if i == 1 or i == 2 or i == 3:
                 a_byte_array = bytearray(line[i], "utf8")
@@ -167,17 +177,22 @@ def convert_data_to_binary(data):
 
                 for byte in byte_list:
                     for bit in byte[2:]:
+                        line_size += 1
                         new_line.append(int(bit))
 
             elif i == 24 or i == 25 or i == 26 or i == 27 or i == 28 or i == 29 or i == 30 or i == 33 or i == 34 or i == 35 or i == 36 or i == 37 or i == 38 or i == 39 or i == 40:
                 bits = bitstring.BitArray(float=line[i], length=32)
                 for bit in bits.bin:
+                    line_size += 1
                     new_line.append(int(bit))
             else:
                 for bit in bin(line[i])[2:]:
+                    line_size += 1
                     new_line.append(int(bit))
 
         result.append(new_line)
+        print(line_size)
+        line_size = 0
 
     return result
 
@@ -187,22 +202,31 @@ THRESHOLD = 0.5
 x_train_bin = convert_data_to_binary(x_train)
 x_test_bin = convert_data_to_binary(x_test)
 
+print("Convert to binary done")
+
 # _ = remove_contradicting(x_train_bin, y_train_nocon)
 
 # самый примитивный перевод в кубиты
 
 
 def convert_to_circuit(data):
-    qubits = cirq.LineQubit.range(len(data))
+    qubits = cirq.GridQubit.rect(1, len(data))
     circuit_t = cirq.Circuit()
-    for i, bit in data:
-        if bit:
+    for i in range(len(data)):
+        if data[i]:
             circuit_t.append(cirq.X(qubits[i]))
     return circuit_t
 
 
+print("Starting convert to circuit...")
+
+# x_train_circ = [convert_to_circuit(x) for x in x_train_bin]
 x_train_circ = [convert_to_circuit(x) for x in x_train_bin]
+print("train done")
 x_test_circ = [convert_to_circuit(x) for x in x_test_bin]
+print("test_done")
+
+print("... convert to circuits done")
 
 
 SVGCircuit(x_train_circ[0])
@@ -277,8 +301,8 @@ model = tf.keras.Sequential([
 ])
 
 
-y_train_hinge = 2.0*y_train_nocon-1.0
-y_test_hinge = 2.0*y_test-1.0
+y_train_hinge = 2.0*np.array(y_train)-1.0
+y_test_hinge = 2.0*np.array(y_test)-1.0
 
 
 def hinge_accuracy(y_true, y_pred):
