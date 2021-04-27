@@ -1,10 +1,18 @@
-def load_own_data(file_name, vulnerability):
+def load_own_data(file_name, vulnerability, amount_of_examples):
     with open(file_name, "r") as f:
         temp = f.readlines()
         x = []
+        normal_count = 0
+        vulner_count = 0
         for xi in temp:
-            if (xi.split(',')[-1] == 'normal.\n' or xi.split(',')[-1] == (vulnerability + '.\n')):
+            if (xi.split(',')[-1] == 'normal.\n') and (normal_count <= amount_of_examples):
                 x.append(xi.split(','))
+                normal_count += 1
+            if (xi.split(',')[-1] == (vulnerability + '.\n')) and (vulner_count <= amount_of_examples):
+                x.append(xi.split(','))
+                vulner_count += 1
+            # if (xi.split(',')[-1] == 'normal.\n' or xi.split(',')[-1] == (vulnerability + '.\n')):
+            #     x.append(xi.split(','))
         temp = 0
         # x = [if () xi.split(',') for xi in x]
 
@@ -49,5 +57,5 @@ def load_own_data(file_name, vulnerability):
 
 
 (x_train, y_train), (x_test, y_test) = load_own_data(
-    "kddcup.data_10_percent_corrected", "neptune")
+    "kddcup.data_10_percent_corrected", "neptune", 100)
 print(x_train[0], y_train[0], x_test[0], y_test[0])
