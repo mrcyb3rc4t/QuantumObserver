@@ -1,20 +1,29 @@
+from random import shuffle
+
+
 def load_own_data(file_name, vulnerability, amount_of_examples):
     with open(file_name, "r") as f:
         temp = f.readlines()
         x = []
+        amount_of_examples *= 2
         normal_count = 0
         vulner_count = 0
         for xi in temp:
-            if (xi.split(',')[-1] == 'normal.\n') and (normal_count <= amount_of_examples):
+            if (xi.split(',')[-1] == 'normal.\n') and (normal_count < amount_of_examples):
                 x.append(xi.split(','))
                 normal_count += 1
-            if (xi.split(',')[-1] == (vulnerability + '.\n')) and (vulner_count <= amount_of_examples):
+            if (xi.split(',')[-1] == (vulnerability + '.\n')) and (vulner_count < amount_of_examples):
                 x.append(xi.split(','))
                 vulner_count += 1
+            if (normal_count == amount_of_examples) and (vulner_count == amount_of_examples):
+                break
             # if (xi.split(',')[-1] == 'normal.\n' or xi.split(',')[-1] == (vulnerability + '.\n')):
             #     x.append(xi.split(','))
         temp = 0
         # x = [if () xi.split(',') for xi in x]
+
+        # перемешиваем массив, чтобы в выборках было +- одинаково нормис трафика и злого
+        shuffle(x)
 
         x_train = x[:int((len(x) / 2))]
         x_test = x[int((len(x) / 2)):]
