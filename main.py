@@ -1,3 +1,5 @@
+import datetime
+
 import tensorflow as tf
 import tensorflow_quantum as tfq
 
@@ -7,6 +9,9 @@ import numpy as np
 import seaborn as sns
 import collections
 import bitstring
+from random import shuffle
+
+import numpy
 
 # visualization tools
 # %matplotlib inline
@@ -14,15 +19,29 @@ import matplotlib.pyplot as plt
 from cirq.contrib.svg import SVGCircuit
 
 
-def load_own_data(file_name, vulnerability):
+def load_own_data(file_name, vulnerability, amount_of_examples):
     with open(file_name, "r") as f:
         temp = f.readlines()
         x = []
+        amount_of_examples *= 2
+        normal_count = 0
+        vulner_count = 0
         for xi in temp:
-            if xi.split(',')[-1] == 'normal.\n' or xi.split(',')[-1] == (vulnerability + '.\n'):
+            if (xi.split(',')[-1] == 'normal.\n') and (normal_count < amount_of_examples):
                 x.append(xi.split(','))
+                normal_count += 1
+            if (xi.split(',')[-1] == (vulnerability + '.\n')) and (vulner_count < amount_of_examples):
+                x.append(xi.split(','))
+                vulner_count += 1
+            if (normal_count == amount_of_examples) and (vulner_count == amount_of_examples):
+                break
+            # if (xi.split(',')[-1] == 'normal.\n' or xi.split(',')[-1] == (vulnerability + '.\n')):
+            #     x.append(xi.split(','))
         temp = 0
         # x = [if () xi.split(',') for xi in x]
+
+        # перемешиваем массив, чтобы в выборках было +- одинаково нормис трафика и злого
+        shuffle(x)
 
         x_train = x[:int((len(x) / 2))]
         x_test = x[int((len(x) / 2)):]
@@ -33,7 +52,7 @@ def load_own_data(file_name, vulnerability):
             for i in range(len(line)):
                 if i == 1 or i == 2 or i == 3 or i == 41:
                     if i == 41:
-                        if line[i][:-2] == "normal":
+                        if (line[i][:-2] == "normal"):
                             y_train.append(True)
                         else:
                             y_train.append(False)
@@ -49,7 +68,7 @@ def load_own_data(file_name, vulnerability):
             for i in range(len(line)):
                 if i == 1 or i == 2 or i == 3 or i == 41:
                     if i == 41:
-                        if line[i][:-2] == "normal":
+                        if (line[i][:-2] == "normal"):
                             y_test.append(True)
                         else:
                             y_test.append(False)
@@ -66,18 +85,12 @@ def load_own_data(file_name, vulnerability):
 
 # загружаем датасеты MNIST
 
-(x_train, y_train), (x_test, y_test) = load_own_data("kddcup.data_10_percent_corrected", "neptune")
+(x_train, y_train), (x_test, y_test) = load_own_data("kddcup.data_10_percent_corrected", "neptune", 100)
 
 # Rescale the images from [0,255] to the [0.0,1.0] range.
 # x_train, x_test = x_train[..., np.newaxis]/255.0, x_test[..., np.newaxis]/255.0
 
 DATA_SLICE = 10000
-
-x_train = x_train[:DATA_SLICE]
-y_train = y_train[:DATA_SLICE]
-
-x_test = x_test[:DATA_SLICE]
-y_test = y_test[:DATA_SLICE]
 
 print("Number of original training examples:", len(x_train))
 print("Number of original test examples:", len(x_test))
@@ -220,6 +233,7 @@ def pack_data(data):
 x_train_bin = pack_data(x_train_bin)
 x_test_bin = pack_data(x_test_bin)
 
+
 # самый примитивный перевод в кубиты
 
 
@@ -307,6 +321,8 @@ def create_quantum_model():
 
 model_circuit, model_readout = create_quantum_model()
 
+# tf.config.run_functions_eagerly(True)
+
 # Build the Keras model.
 model = tf.keras.Sequential([
     # The input is the data-circuit, encoded as a tf.string
@@ -327,10 +343,26 @@ def hinge_accuracy(y_true, y_pred):
     return tf.reduce_mean(result)
 
 
+m = tf.keras.metrics.Recall()
+
+
+def recall(y_true, y_pred):
+    y_t = (y_true + 1.0) / 2.0
+    y_p = (y_pred + 1.0) / 2.0
+
+    m.update_state(y_t, y_p)
+    # m.update_state(y_t, y_p)
+    # return float(m.result())
+    return float(m.result())
+
+
 model.compile(
     loss=tf.keras.losses.Hinge(),
     optimizer=tf.keras.optimizers.Adam(),
-    metrics=[hinge_accuracy])
+    metrics=[hinge_accuracy, recall])
+
+log_dir = "/home/hubbyk/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 print(model.summary())
 
@@ -347,6 +379,7 @@ qnn_history = model.fit(
     batch_size=32,
     epochs=EPOCHS,
     verbose=1,
-    validation_data=(x_test_tfcirc, y_test_hinge))
+    validation_data=(x_test_tfcirc, y_test_hinge),
+    callbacks=[tensorboard_callback])
 
 qnn_results = model.evaluate(x_test_tfcirc, np.array(y_test))
