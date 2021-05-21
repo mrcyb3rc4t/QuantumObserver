@@ -85,7 +85,7 @@ def load_own_data(file_name, vulnerability, amount_of_examples):
 
 # загружаем датасеты MNIST
 
-(x_train, y_train), (x_test, y_test) = load_own_data("kddcup.data_10_percent_corrected", "neptune", 100)
+(x_train, y_train), (x_test, y_test) = load_own_data("kddcup.data_10_percent_corrected", "neptune", 2000)
 
 # Rescale the images from [0,255] to the [0.0,1.0] range.
 # x_train, x_test = x_train[..., np.newaxis]/255.0, x_test[..., np.newaxis]/255.0
@@ -311,6 +311,7 @@ def create_quantum_model():
 
     # Then add layers (experiment by adding more).
     builder.add_layer(circuit_t, cirq.XX, "xx1")
+    # builder.add_layer(circuit_t, cirq.YY, "yy1")
     builder.add_layer(circuit_t, cirq.ZZ, "zz1")
 
     # Finally, prepare the readout qubit.
@@ -356,12 +357,38 @@ def recall(y_true, y_pred):
     return float(m.result())
 
 
+m1 = tf.keras.metrics.BinaryCrossentropy()
+
+
+def binary_crossentropy(y_true, y_pred):
+    y_t = (y_true + 1.0) / 2.0
+    y_p = (y_pred + 1.0) / 2.0
+
+    m1.update_state(y_t, y_p)
+    # m.update_state(y_t, y_p)
+    # return float(m.result())
+    return float(m1.result())
+
+
+m2 = tf.keras.metrics.MeanSquaredError()
+
+
+def mean_squared_error(y_true, y_pred):
+    y_t = (y_true + 1.0) / 2.0
+    y_p = (y_pred + 1.0) / 2.0
+
+    m2.update_state(y_t, y_p)
+    # m.update_state(y_t, y_p)
+    # return float(m.result())
+    return float(m2.result())
+
+
 model.compile(
     loss=tf.keras.losses.Hinge(),
     optimizer=tf.keras.optimizers.Adam(),
-    metrics=[hinge_accuracy, recall])
+    metrics=[hinge_accuracy, recall, binary_crossentropy, mean_squared_error])
 
-log_dir = "/home/hubbyk/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+log_dir = "/home/darkcatfish/logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 print(model.summary())
